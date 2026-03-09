@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akiba Youth Group - Tracker Pro v6.2</title>
+    <title>Akiba Youth Group - Tracker Pro v6.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1014,9 +1014,8 @@ const app={
     printHistory(memberId){
         const m=cache.get('members').find(x=>x.id===memberId);
         const trans=cache.get('transactions').filter(t=>t.memberId===memberId);
-        const totalSav=trans.filter(t=>t.type==='SAVINGS').reduce((s,t)=>s+Number(t.amount),0);
         const totalEmg=trans.filter(t=>t.type==='EMERGENCY').reduce((s,t)=>s+Number(t.amount),0);
-        const totalFines=trans.filter(t=>t.type==='FINE').reduce((s,t)=>s+Number(t.amount),0);
+        const netSavBal=app.getMemberSavingsBalance(memberId);
         const aLoan=cache.get('loans').find(l=>l.memberId===memberId&&l.status==='ACTIVE');
         const w=window.open('','_blank','width=820,height=700');
         w.document.write(`<!DOCTYPE html><html><head><title>Statement: ${m?m.name:''}</title>
@@ -1046,10 +1045,9 @@ const app={
             <div><div class="org">Akiba Youth Group</div><h1>${m?m.name:''}</h1><div class="sub">${m?m.phone||'No phone recorded':''} &nbsp;·&nbsp; Statement: ${new Date().toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})}</div></div>
             <div class="logo">A</div>
         </div>
-        <div class="stats">
-            <div class="sb"><div class="v">Ksh. ${totalSav.toLocaleString()}</div><div class="l">Total Savings</div></div>
+        <div class="stats" style="grid-template-columns:repeat(2,1fr)">
+            <div class="sb"><div class="v">Ksh. ${netSavBal.toLocaleString()}</div><div class="l">Net Savings Balance</div></div>
             <div class="sb"><div class="v">Ksh. ${totalEmg.toLocaleString()}</div><div class="l">Emergency Fund</div></div>
-            <div class="sb"><div class="v">Ksh. ${totalFines.toLocaleString()}</div><div class="l">Fines Paid</div></div>
         </div>
         ${aLoan?`<div class="alert">⚠️ Active Loan — Outstanding Balance: Ksh. ${Number(aLoan.balance).toLocaleString()}</div>`:''}
         <table>
