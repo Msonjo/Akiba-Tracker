@@ -322,11 +322,11 @@ async function ensureSheets() {
     const meta=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}?fields=sheets.properties.title`,'GET');
     const existing=meta.sheets.map(s=>s.properties.title);
     const HDRS={
-        [SHEETS.MEMBERS]:     [['Id','Name','Phone','Ts']],
-        [SHEETS.TRANSACTIONS]:[['Id','MemberId','Type','Amount','Desc','Ts']],
-        [SHEETS.LOANS]:       [['Id','MemberId','Amount','Balance','Status','InterestAmt','InterestRate','Ts']],
-        [SHEETS.EXPENSES]:    [['Id','Desc','Amount','Ts']],
-        [SHEETS.BUSINESS]:    [['Id','Date','Name','Category','Revenue','Cost','Notes','Ts']]
+        [SHEETS.MEMBERS]:     [['id','name','phone','ts']],
+        [SHEETS.TRANSACTIONS]:[['id','memberId','type','amount','desc','ts']],
+        [SHEETS.LOANS]:       [['id','memberId','amount','balance','status','interestAmt','interestRate','ts']],
+        [SHEETS.EXPENSES]:    [['id','desc','amount','ts']],
+        [SHEETS.BUSINESS]:    [['id','date','name','category','revenue','cost','notes','ts']]
     };
     const reqs=[];
     for(const n of Object.values(SHEETS)) if(!existing.includes(n)) reqs.push({addSheet:{properties:{title:n}}});
