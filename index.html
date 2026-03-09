@@ -772,12 +772,15 @@ const app={
                 if(ev>0) await cache.add('transactions',{memberId:mid, type:'EMERGENCY', amount:ev});
 
                 if(fv>0){
+                    // Read the selected fine label from the dropdown for a descriptive name
+                    const fineEl = document.querySelector(`.m-fine[data-id="${mid}"]`);
+                    const fineLabel = fineEl ? fineEl.options[fineEl.selectedIndex].text.replace(/\s*\(Ksh.*\)/,'').trim() : 'Fine';
                     // Full fine recorded (flows into group reserves)
-                    await cache.add('transactions',{memberId:mid, type:'FINE', amount:fv, desc:`Fine paid`});
+                    await cache.add('transactions',{memberId:mid, type:'FINE', amount:fv, desc:fineLabel});
                     // 25% fine rebate credited back to member's savings
                     const memberRebate = Math.floor(fv * 0.25);
                     if(memberRebate > 0){
-                        await cache.add('transactions',{memberId:mid, type:'FINE_REBATE', amount:memberRebate, desc:`Fine rebate (25% of ${fmt(fv)} fine)`});
+                        await cache.add('transactions',{memberId:mid, type:'FINE_REBATE', amount:memberRebate, desc:`${fineLabel} Rebate (25%)`});
                     }
                 }
             }
@@ -892,7 +895,7 @@ const app={
                 ${aLoan?`<div style="background:var(--danger-bg);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#991b1b">⚠️ Active Loan Balance: ${fmt(aLoan.balance)}</div>`:''}
                 <table style="width:100%;border-collapse:collapse;font-size:12px">
                     <thead><tr style="background:#f3f4f6"><th style="padding:8px;text-align:left;border-bottom:2px solid var(--border)">Date</th><th style="padding:8px;text-align:left;border-bottom:2px solid var(--border)">Type</th><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">Amount</th></tr></thead>
-                    <tbody>${trans.slice().reverse().map(t=>`<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px">${fmtDate(t.ts)}</td><td style="padding:8px">${t.type}</td><td style="padding:8px;text-align:right;font-weight:700">${fmt(t.amount)}</td></tr>`).join('')||'<tr><td colspan="3" style="padding:20px;text-align:center;color:#999">No transactions.</td></tr>'}</tbody>
+                    <tbody>${trans.slice().reverse().map(t=>{const label=t.desc&&t.desc.trim()?t.desc:t.type.replace(/_/g,' ');return`<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px">${fmtDate(t.ts)}</td><td style="padding:8px">${label}</td><td style="padding:8px;text-align:right;font-weight:700">${fmt(t.amount)}</td></tr>`;}).join('')||'<tr><td colspan="3" style="padding:20px;text-align:center;color:#999">No transactions.</td></tr>'}</tbody>
                 </table>
             </div>
             <div class="modal-actions">
@@ -1055,7 +1058,7 @@ const app={
         ${aLoan?`<div class="alert">⚠️ Active Loan — Outstanding Balance: Ksh. ${Number(aLoan.balance).toLocaleString()}</div>`:''}
         <table>
             <thead><tr><th>Date</th><th>Transaction Type</th><th style="text-align:right">Amount (Ksh)</th></tr></thead>
-            <tbody>${trans.slice().reverse().map(t=>`<tr><td>${fmtDate(t.ts)}</td><td>${t.type.replace('_',' ')}</td><td>${Number(t.amount).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:#999;padding:20px">No transactions on record.</td></tr>'}</tbody>
+            <tbody>${trans.slice().reverse().map(t=>{const label=t.desc&&t.desc.trim()?t.desc:t.type.replace(/_/g,' ');return`<tr><td>${fmtDate(t.ts)}</td><td>${label}</td><td>${Number(t.amount).toLocaleString()}</td></tr>`;}).join('')||'<tr><td colspan="3" style="text-align:center;color:#999;padding:20px">No transactions on record.</td></tr>'}</tbody>
         </table>
         <div class="footer">Akiba Tracker Pro v6.4 &nbsp;·&nbsp; Auto-generated member statement &nbsp;·&nbsp; ${new Date().toLocaleString()}</div>
         <br><button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
@@ -1068,7 +1071,7 @@ const app={
         const trans=cache.get('transactions').filter(t=>t.memberId===memberId);
         let csv=`Member Statement\nName,${m?m.name:''}\nPhone,${m?m.phone||'N/A':''}\nGenerated,${new Date().toLocaleDateString()}\n\n`;
         csv+='Date,Transaction Type,Amount (Ksh)\n';
-        trans.slice().reverse().forEach(t=>{csv+=`"${fmtDate(t.ts)}","${t.type}","${Number(t.amount).toLocaleString()}"\n`;});
+        trans.slice().reverse().forEach(t=>{const label=t.desc&&t.desc.trim()?t.desc:t.type.replace(/_/g,' ');csv+=`"${fmtDate(t.ts)}","${label}","${Number(t.amount).toLocaleString()}"\n`;});
         const blob=new Blob([csv],{type:'text/csv'});
         const a=document.createElement('a');
         a.href=URL.createObjectURL(blob);
@@ -1094,7 +1097,8 @@ const app={
                 const gross = Number(t.amount);
                 const rebate = Math.floor(gross * 0.25);
                 const net = gross - rebate;
-                ledger.push({ts:t.ts, category:'Fine', member:m?m.name:'Unknown', desc:`Fine — net 75% kept`, debit:0, credit:net});
+                const fineDesc = (t.desc && t.desc !== 'Fine paid') ? t.desc : 'Fine';
+                ledger.push({ts:t.ts, category:'Fine', member:m?m.name:'Unknown', desc:`${fineDesc} — 75% group share`, debit:0, credit:net});
             }
             if(t.type === 'EXPENSE'){
                 ledger.push({ts:t.ts, category:'Expense', member:'—', desc:t.desc||'Expense', debit:Number(t.amount), credit:0});
