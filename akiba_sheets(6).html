@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akiba Youth Group - Tracker Pro v6.2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #800000; --primary-dark: #5a0000; --primary-light: #fdf2f2;
+            --secondary: #FFC107; --secondary-dark: #e6ac00;
+            --text-dark: #111827; --text-mid: #374151; --text-light: #6b7280;
+            --bg-light: #f3f4f6; --bg-card: #ffffff; --border: #e5e7eb;
+            --success: #10b981; --success-bg: #d1fae5;
+            --danger: #ef4444; --danger-bg: #fee2e2;
+            --warning: #f59e0b; --warning-bg: #fef3c7;
+            --info: #3b82f6; --info-bg: #dbeafe;
+            --purple: #8b5cf6; --purple-bg: #ede9fe;
+            --teal: #14b8a6; --teal-bg: #ccfbf1;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        body { background: var(--bg-light); color: var(--text-dark); padding-bottom: 80px; min-height: 100vh; }
+
+        /* AUTH */
+        #auth-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; background: linear-gradient(145deg,#800000 0%,#3d0000 60%,#1a0000 100%); }
+        .auth-card { background:white; border-radius:24px; padding:40px; max-width:500px; width:100%; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,0.4); }
+        .auth-logo { width:72px; height:72px; background:var(--secondary); border-radius:18px; display:flex; align-items:center; justify-content:center; color:var(--primary); font-weight:900; font-size:30px; margin:0 auto 16px; box-shadow:0 8px 20px rgba(255,193,7,0.4); }
+        .auth-card h1 { color:var(--primary); font-size:26px; font-weight:900; }
+        .auth-version { display:inline-block; background:var(--primary-light); color:var(--primary); font-size:10px; font-weight:800; padding:2px 10px; border-radius:20px; margin:6px 0 12px; text-transform:uppercase; letter-spacing:1px; }
+        .auth-card p { color:var(--text-light); margin-bottom:20px; font-size:13px; line-height:1.7; }
+        .setup-box { background:#fffbeb; border:1px solid #fcd34d; border-radius:12px; padding:16px; margin:16px 0; text-align:left; }
+        .setup-box h4 { font-size:12px; font-weight:800; color:#92400e; margin-bottom:8px; }
+        .setup-box ol { padding-left:16px; font-size:12px; color:#78350f; line-height:2; }
+        .setup-box a { color:var(--primary); font-weight:700; }
+        .config-section { margin-top:16px; border-top:1px solid var(--border); padding-top:16px; text-align:left; }
+        .config-section label { font-size:10px; font-weight:800; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:4px; }
+        .config-input { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; margin-bottom:10px; outline:none; font-family:inherit; transition:border-color .2s; }
+        .config-input:focus { border-color:var(--primary); }
+        .save-config-btn { background:var(--primary); color:var(--secondary); border:none; border-radius:10px; padding:12px 20px; font-weight:800; cursor:pointer; width:100%; font-size:14px; font-family:inherit; transition:.2s; }
+        .save-config-btn:hover { background:var(--primary-dark); }
+
+        /* LOADING */
+        #loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(6px); }
+        .spinner { width:44px; height:44px; border:4px solid #e5e7eb; border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; margin-bottom:14px; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        #loading-overlay p { color:var(--text-light); font-size:14px; font-weight:600; }
+
+        /* NAV */
+        nav { background:linear-gradient(90deg,var(--primary) 0%,var(--primary-dark) 100%); position:sticky; top:0; z-index:50; box-shadow:0 2px 16px rgba(0,0,0,.2); }
+        .nav-inner { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; max-width:1280px; margin:0 auto; gap:8px; }
+        .brand { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
+        .brand-logo { width:34px; height:34px; background:var(--secondary); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--primary); font-weight:900; font-size:15px; }
+        .nav-links { display:flex; gap:2px; align-items:center; flex-wrap:wrap; }
+        .nav-btn { background:transparent; border:none; color:rgba(255,255,255,.8); padding:7px 11px; border-radius:7px; cursor:pointer; font-weight:600; font-size:12px; transition:.15s; font-family:inherit; white-space:nowrap; }
+        .nav-btn:hover { background:rgba(255,255,255,.12); color:white; }
+        .nav-btn.active { background:var(--secondary); color:var(--primary); }
+        .user-pill { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.12); border-radius:20px; padding:4px 10px 4px 4px; flex-shrink:0; }
+        .user-avatar { width:26px; height:26px; border-radius:50%; background:var(--secondary); color:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:11px; overflow:hidden; flex-shrink:0; }
+        .user-avatar img { width:100%; height:100%; object-fit:cover; }
+        .user-pill span { font-size:12px; font-weight:600; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:white; }
+        .sign-out-btn { background:rgba(255,255,255,.12); border:none; color:rgba(255,255,255,.8); padding:3px 7px; border-radius:4px; cursor:pointer; font-size:10px; font-family:inherit; }
+        .sync-status { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px; background:var(--success-bg); color:#065f46; flex-shrink:0; }
+        .sync-status.syncing { background:var(--warning-bg); color:#92400e; }
+        .sync-status.error { background:var(--danger-bg); color:#991b1b; }
+        .sync-dot { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
+        .sync-dot.pulse { animation:blink 1.4s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+        .mobile-nav { display:none; position:fixed; bottom:0; width:100%; background:white; border-top:2px solid var(--border); justify-content:space-around; padding:6px 0 10px; z-index:100; box-shadow:0 -4px 12px rgba(0,0,0,.08); }
+        .mobile-nav-btn { background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; font-weight:700; color:var(--text-light); cursor:pointer; padding:4px 6px; font-family:inherit; }
+        .mobile-nav-btn .icon { font-size:18px; }
+        @media(max-width:900px){ .nav-links{display:none;} .mobile-nav{display:flex;} }
+
+        /* LAYOUT */
+        .container { max-width:1280px; margin:0 auto; padding:20px 16px; animation:fadeIn .25s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; gap:12px; flex-wrap:wrap; }
+        .page-title { font-size:22px; font-weight:900; color:var(--primary); }
+        .page-subtitle { font-size:12px; color:var(--text-light); margin-top:2px; }
+        .card { background:var(--bg-card); border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,.08); border:1px solid var(--border); overflow:hidden; margin-bottom:16px; }
+        .card-p { padding:20px; }
+        .card-header { padding:14px 20px; background:#fafafa; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+        .card-title { font-weight:800; color:var(--primary); font-size:15px; }
+        .grid-2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+        .grid-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+
+        /* STAT CARDS */
+        .stat-card { border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; transition:transform .2s,box-shadow .2s; }
+        .stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.12); }
+        .stat-card::before { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,.12); }
+        .stat-card .s-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.8px; opacity:.75; margin-bottom:8px; }
+        .stat-card .s-val { font-size:24px; font-weight:900; line-height:1; margin-bottom:4px; }
+        .stat-card .s-sub { font-size:12px; opacity:.7; font-weight:500; }
+        .stat-primary { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:white; }
+        .stat-gold { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; }
+        .stat-blue { background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:white; }
+        .stat-green { background:linear-gradient(135deg,#10b981,#059669); color:white; }
+        .stat-purple { background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:white; }
+        .stat-teal { background:linear-gradient(135deg,#14b8a6,#0d9488); color:white; }
+
+        /* BUTTONS */
+        .btn { padding:9px 16px; border-radius:9px; font-weight:700; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; font-size:13px; transition:.15s; font-family:inherit; white-space:nowrap; }
+        .btn:active { transform:scale(.97); }
+        .btn-primary { background:var(--primary); color:var(--secondary); }
+        .btn-primary:hover { background:var(--primary-dark); }
+        .btn-secondary { background:var(--secondary); color:var(--primary); }
+        .btn-danger { background:var(--danger-bg); color:var(--danger); }
+        .btn-ghost { background:transparent; color:var(--text-light); border:1.5px solid var(--border); }
+        .btn-ghost:hover { background:var(--bg-light); }
+        .btn-teal { background:var(--teal-bg); color:var(--teal); }
+        .btn-teal:hover { background:#99f6e4; }
+        .w-full { width:100%; justify-content:center; }
+
+        /* FORMS */
+        .input-label { font-size:10px; font-weight:800; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:4px; margin-top:12px; }
+        .input-label:first-child { margin-top:0; }
+        .input-control { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:9px; outline:none; font-size:13px; font-family:inherit; color:var(--text-dark); transition:border-color .15s; background:white; }
+        .input-control:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(128,0,0,.08); }
+
+        /* TABLE */
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; }
+        thead { background:#f9fafb; }
+        th { text-align:left; padding:11px 14px; font-size:10px; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; font-weight:800; border-bottom:2px solid var(--border); white-space:nowrap; }
+        td { padding:12px 14px; border-bottom:1px solid #f3f4f6; font-size:13px; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:#fafafa; }
+
+        /* BADGES */
+        .badge { padding:3px 8px; border-radius:5px; font-size:10px; font-weight:800; text-transform:uppercase; }
+        .badge-success { background:var(--success-bg); color:#065f46; }
+        .badge-warning { background:var(--warning-bg); color:#92400e; }
+        .badge-info { background:var(--info-bg); color:#1e40af; }
+        .badge-danger { background:var(--danger-bg); color:#991b1b; }
+        .badge-teal { background:var(--teal-bg); color:#0d9488; }
+
+        /* MODAL */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; backdrop-filter:blur(3px); }
+        .modal { background:white; padding:28px; border-radius:18px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,.25); }
+        .modal h3 { font-size:18px; font-weight:900; color:var(--primary); margin-bottom:16px; }
+        .modal-actions { display:flex; gap:10px; margin-top:20px; }
+
+        /* BUSINESS */
+        .biz-summary { background:linear-gradient(135deg,var(--teal),#0d9488); border-radius:14px; padding:20px 24px; color:white; margin-bottom:20px; display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:16px; }
+        .biz-summary .bs-val { font-size:22px; font-weight:900; }
+        .biz-summary .bs-lbl { font-size:10px; opacity:.8; font-weight:600; text-transform:uppercase; margin-top:2px; }
+        .profit-pos { color:var(--success); font-weight:700; }
+        .profit-neg { color:var(--danger); font-weight:700; }
+
+        /* PROGRESS */
+        .progress-wrap { background:#e5e7eb; border-radius:99px; height:5px; overflow:hidden; margin-top:5px; }
+        .progress-bar { height:100%; border-radius:99px; background:var(--success); }
+
+        /* EMPTY */
+        .empty-state { text-align:center; padding:36px 20px; color:var(--text-light); }
+        .empty-state .ei { font-size:38px; margin-bottom:8px; }
+        .info-chip { display:inline-flex; align-items:center; gap:5px; background:var(--info-bg); color:#1e40af; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
+    </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+    <div class="auth-card">
+        <div class="auth-logo">A</div>
+        <h1>AKIBA TRACKER</h1>
+        <div class="auth-version">v6.2 · Google Sheets Sync</div>
+        <p>Sign in with Google to sync all your group data securely to your own Google Sheet — no data stored on this device.</p>
+        <div class="setup-box">
+            <h4>⚙️ One-Time Setup</h4>
+            <ol>
+                <li>Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></li>
+                <li>Create project → Enable <strong>Google Sheets API</strong> &amp; <strong>Google Drive API</strong></li>
+                <li>Create <strong>OAuth 2.0 Client ID</strong> (Web Application type)</li>
+                <li>Add your hosted URL to <strong>Authorized JavaScript Origins</strong></li>
+                <li>Add your Gmail to <strong>OAuth Consent → Test Users</strong></li>
+                <li>Paste your <strong>Client ID</strong> below</li>
+            </ol>
+        </div>
+        <div class="config-section">
+            <label>Google OAuth Client ID</label>
+            <input type="text" id="config-client-id" class="config-input" placeholder="xxxxxxxx.apps.googleusercontent.com">
+            <label>Spreadsheet ID (leave blank to auto-create)</label>
+            <input type="text" id="config-sheet-id" class="config-input" placeholder="Leave blank — auto-creates in your Drive">
+            <button class="save-config-btn" onclick="saveConfig()">🔐 Save &amp; Sign In with Google</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-overlay" style="display:none">
+    <div class="spinner"></div>
+    <p id="loading-text">Loading…</p>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+<nav>
+    <div class="nav-inner">
+        <div class="brand" onclick="app.tab('dashboard')">
+            <div class="brand-logo">A</div>
+            <div><b style="display:block;line-height:1.1;font-size:13px;color:white">AKIBA</b><small style="font-size:9px;color:var(--secondary)">TRACKER PRO v6.2</small></div>
+        </div>
+        <div class="nav-links">
+            <button class="nav-btn active" id="nav-dashboard" onclick="app.tab('dashboard')">📊 Dashboard</button>
+            <button class="nav-btn" id="nav-meeting"   onclick="app.tab('meeting')">📝 Meeting</button>
+            <button class="nav-btn" id="nav-members"   onclick="app.tab('members')">👥 Members</button>
+            <button class="nav-btn" id="nav-loans"     onclick="app.tab('loans')">💰 Loans</button>
+            <button class="nav-btn" id="nav-expenses"  onclick="app.tab('expenses')">💸 Expenses</button>
+            <button class="nav-btn" id="nav-business"  onclick="app.tab('business')">🏪 Business</button>
+            <div id="sync-indicator" class="sync-status"><span class="sync-dot"></span> Synced</div>
+            <div class="user-pill">
+                <div class="user-avatar" id="user-avatar">?</div>
+                <span id="user-name">User</span>
+                <button class="sign-out-btn" onclick="signOut()">Out</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="mobile-nav">
+    <button class="mobile-nav-btn" onclick="app.tab('dashboard')"><span class="icon">📊</span>Home</button>
+    <button class="mobile-nav-btn" onclick="app.tab('meeting')"><span class="icon">📝</span>Meeting</button>
+    <button class="mobile-nav-btn" onclick="app.tab('members')"><span class="icon">👥</span>Members</button>
+    <button class="mobile-nav-btn" onclick="app.tab('loans')"><span class="icon">💰</span>Loans</button>
+    <button class="mobile-nav-btn" onclick="app.tab('expenses')"><span class="icon">💸</span>Expenses</button>
+    <button class="mobile-nav-btn" onclick="app.tab('business')"><span class="icon">🏪</span>Business</button>
+</div>
+
+<div class="container" id="main-content"></div>
+<div id="modal-target"></div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client"></script>
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const CONFIG = {
+    CLIENT_ID: '',
+    SHEET_ID: '',
+    SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file openid profile email'
+};
+const SHEETS = { MEMBERS:'Members', TRANSACTIONS:'Transactions', LOANS:'Loans', EXPENSES:'Expenses', BUSINESS:'Business' };
+
+function loadConfig() {
+    const s = JSON.parse(sessionStorage.getItem('akiba_config')||'{}');
+    if (s.clientId) { CONFIG.CLIENT_ID=s.clientId; document.getElementById('config-client-id').value=s.clientId; }
+    if (s.sheetId)  { CONFIG.SHEET_ID=s.sheetId;   document.getElementById('config-sheet-id').value=s.sheetId; }
+}
+function saveConfig() {
+    const cid = document.getElementById('config-client-id').value.trim();
+    const sid = document.getElementById('config-sheet-id').value.trim();
+    if (!cid) return alert('Please enter your Google OAuth Client ID.');
+    CONFIG.CLIENT_ID=cid; CONFIG.SHEET_ID=sid;
+    sessionStorage.setItem('akiba_config', JSON.stringify({clientId:cid,sheetId:sid}));
+    waitForGoogle(initGoogleAuth);
+}
+function waitForGoogle(cb,n=0) {
+    if (typeof google!=='undefined'&&google.accounts) cb();
+    else if (n>40) alert('Failed to load Google Sign-In. Check connection and refresh.');
+    else setTimeout(()=>waitForGoogle(cb,n+1),250);
+}
+
+// ── AUTH ────────────────────────────────────────────────────
+let tokenClient, accessToken=null;
+function initGoogleAuth() {
+    if (!CONFIG.CLIENT_ID) return;
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CONFIG.CLIENT_ID, scope: CONFIG.SCOPES,
+        callback: async r => {
+            if (r.error) { alert('Auth error: '+r.error); return; }
+            accessToken = r.access_token;
+            await onSignedIn();
+        }
+    });
+    tokenClient.requestAccessToken({prompt:'consent'});
+}
+async function onSignedIn() {
+    showLoading('Connecting to Google…');
+    try {
+        let ui={};
+        try { const r=await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`); if(r.ok) ui=await r.json(); } catch(e){}
+        document.getElementById('user-name').textContent = ui.given_name||ui.name||'Signed In';
+        const av=document.getElementById('user-avatar');
+        if(ui.picture) av.innerHTML=`<img src="${ui.picture}">`;
+        else av.textContent=(ui.name||'A')[0].toUpperCase();
+
+        if (!CONFIG.SHEET_ID) {
+            showLoading('Creating Akiba spreadsheet in your Drive…');
+            CONFIG.SHEET_ID = await createSpreadsheet();
+            sessionStorage.setItem('akiba_config',JSON.stringify({clientId:CONFIG.CLIENT_ID,sheetId:CONFIG.SHEET_ID}));
+            document.getElementById('config-sheet-id').value=CONFIG.SHEET_ID;
+        }
+        showLoading('Initializing sheets…'); await ensureSheets();
+        showLoading('Loading your data…');   await cache.refresh();
+        document.getElementById('auth-screen').style.display='none';
+        document.getElementById('main-app').style.display='block';
+        hideLoading(); app.init();
+    } catch(err) { hideLoading(); alert('Error connecting: '+err.message); console.error(err); }
+}
+function signOut() {
+    if (!confirm('Sign out?')) return;
+    accessToken=null; sessionStorage.removeItem('akiba_config');
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('main-app').style.display='none';
+}
+
+// ── SHEETS API ──────────────────────────────────────────────
+async function gapi(url,method,body) {
+    const opts={method,headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}};
+    if(body) opts.body=JSON.stringify(body);
+    const res=await fetch(url,opts);
+    if(!res.ok){const t=await res.text();console.error('API',res.status,t);throw new Error(`API Error ${res.status}: ${t}`);}
+    return res.json();
+}
+async function createSpreadsheet() {
+    const r=await gapi('https://sheets.googleapis.com/v4/spreadsheets','POST',{
+        properties:{title:'Akiba Tracker Data'},
+        sheets:Object.values(SHEETS).map(title=>({properties:{title}}))
+    });
+    return r.spreadsheetId;
+}
+async function ensureSheets() {
+    const meta=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}?fields=sheets.properties.title`,'GET');
+    const existing=meta.sheets.map(s=>s.properties.title);
+    const HDRS={
+        [SHEETS.MEMBERS]:     [['id','name','phone','ts']],
+        [SHEETS.TRANSACTIONS]:[['id','memberId','type','amount','desc','ts']],
+        [SHEETS.LOANS]:       [['id','memberId','amount','balance','status','interestAmt','interestRate','ts']],
+        [SHEETS.EXPENSES]:    [['id','desc','amount','ts']],
+        [SHEETS.BUSINESS]:    [['id','date','name','category','revenue','cost','notes','ts']]
+    };
+    const reqs=[];
+    for(const n of Object.values(SHEETS)) if(!existing.includes(n)) reqs.push({addSheet:{properties:{title:n}}});
+    if(reqs.length) await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}:batchUpdate`,'POST',{requests:reqs});
+    for(const[n,h] of Object.entries(HDRS)){
+        const d=await readSheet(n,'A1:Z1');
+        if(!d||!d[0]||!d[0].length) await writeRange(n,'A1',h);
+    }
+}
+async function readSheet(name,range='A:Z') {
+    const r=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(name+'!'+range)}`,'GET');
+    return r.values||[];
+}
+async function writeRange(name,cell,values) {
+    await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(name+'!'+cell)}?valueInputOption=RAW`,'PUT',{values});
+}
+async function clearAndWrite(name,rows) {
+    await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(name+'!A2:Z10000')}:clear`,'POST',{});
+    if(rows.length) await writeRange(name,'A2',rows);
+}
+
+// ── CACHE ────────────────────────────────────────────────────
+const cache={
+    members:[],transactions:[],loans:[],expenses:[],business:[],
+    async refresh(){
+        const[mR,tR,lR,eR,bR]=await Promise.all([
+            readSheet(SHEETS.MEMBERS),readSheet(SHEETS.TRANSACTIONS),
+            readSheet(SHEETS.LOANS),readSheet(SHEETS.EXPENSES),readSheet(SHEETS.BUSINESS)
+        ]);
+        cache.members=r2o(mR); cache.transactions=r2o(tR); cache.loans=r2o(lR); cache.expenses=r2o(eR); cache.business=r2o(bR);
+    },
+    get(k){return cache[k]||[];},
+    async add(k,item){
+        item.id=Date.now().toString(36)+Math.random().toString(36).substr(2,5);
+        item.ts=new Date().toISOString();
+        cache[k].push(item); await sync(k); return item;
+    },
+    async update(k,id,data){ cache[k]=cache[k].map(i=>i.id===id?{...i,...data}:i); await sync(k); },
+    async delete(k,id){ cache[k]=cache[k].filter(i=>i.id!==id); await sync(k); }
+};
+async function sync(k){
+    setSS('syncing');
+    const nm={members:SHEETS.MEMBERS,transactions:SHEETS.TRANSACTIONS,loans:SHEETS.LOANS,expenses:SHEETS.EXPENSES,business:SHEETS.BUSINESS};
+    const items=cache[k];
+    let rows;
+    if(k==='members')      rows=items.map(m=>[m.id,m.name,m.phone||'',m.ts]);
+    else if(k==='transactions') rows=items.map(t=>[t.id,t.memberId||'',t.type,t.amount,t.desc||'',t.ts]);
+    else if(k==='loans')   rows=items.map(l=>[l.id,l.memberId,l.amount,l.balance,l.status,l.interestAmt||'0',l.interestRate||'0',l.ts]);
+    else if(k==='expenses') rows=items.map(e=>[e.id,e.desc,e.amount,e.ts]);
+    else if(k==='business') rows=items.map(b=>[b.id,b.date||'',b.name,b.category||'',b.revenue||0,b.cost||0,b.notes||'',b.ts]);
+    await clearAndWrite(nm[k],rows); setSS('synced');
+}
+function r2o(rows){
+    if(!rows||rows.length<2) return [];
+    const h=rows[0];
+    return rows.slice(1).filter(r=>r.length&&r[0]).map(row=>{const o={};h.forEach((c,i)=>o[c]=row[i]||'');return o;});
+}
+
+// ── UI UTILS ─────────────────────────────────────────────────
+function setSS(s){
+    const el=document.getElementById('sync-indicator'); if(!el) return;
+    if(s==='syncing'){el.className='sync-status syncing';el.innerHTML='<span class="sync-dot pulse"></span> Syncing…';}
+    else if(s==='error'){el.className='sync-status error';el.innerHTML='<span class="sync-dot"></span> Sync Error';}
+    else{el.className='sync-status';el.innerHTML='<span class="sync-dot"></span> Synced';}
+}
+function showLoading(t='Loading…'){document.getElementById('loading-text').textContent=t;document.getElementById('loading-overlay').style.display='flex';}
+function hideLoading(){document.getElementById('loading-overlay').style.display='none';}
+function fmt(n){return 'Ksh. '+Number(n||0).toLocaleString();}
+function fmtDate(ts){return ts?new Date(ts).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+
+// ── APP ──────────────────────────────────────────────────────
+const app={
+    state:{tab:'dashboard',search:''},
+    init(){app.tab('dashboard');},
+    tab(name){
+        app.state.tab=name; app.state.search='';
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        const btn=document.getElementById('nav-'+name); if(btn) btn.classList.add('active');
+        app.render();
+    },
+
+    // Returns a member's net savings balance.
+    // SAVINGS + PRINCIPAL_RETURN + INTEREST_CREDIT + FINE_REBATE
+    // minus LOAN_ISSUE (principal deducted when loan given out)
+    getMemberSavingsBalance(mid){
+        const tr = cache.get('transactions');
+        let bal = 0;
+        tr.forEach(t => {
+            if(t.memberId !== mid) return;
+            if(['SAVINGS','PRINCIPAL_RETURN','INTEREST_CREDIT','FINE_REBATE'].includes(t.type)) bal += Number(t.amount);
+            if(t.type === 'LOAN_ISSUE') bal -= Number(t.amount);
+        });
+        return Math.max(0, bal);
+    },
+
+    getTotals(){
+        const tr=cache.get('transactions'), lo=cache.get('loans'), ex=cache.get('expenses'), bz=cache.get('business');
+        const members=cache.get('members');
+
+        // ── GROUP EARNINGS (reserves) ──────────────────────────────────────
+        // Group earns: 75% of fines + 25% of loan interest + business profit
+        // Member savings and principal returns are NOT group earnings
+        let finesIn=0, fineRebatesOut=0, totalEmerg=0;
+        tr.forEach(t=>{
+            const a=Number(t.amount);
+            if(t.type==='FINE')      finesIn      += a;  // full fine received
+            if(t.type==='FINE_REBATE') fineRebatesOut += a;  // 25% returned to member
+            if(t.type==='EMERGENCY') totalEmerg   += a;
+        });
+        const groupFineShare = finesIn - fineRebatesOut; // net 75% the group keeps
+
+        // Group keeps 25% of interest — only on PAID loans (interest actually received)
+        // Active loans haven't been fully repaid yet so interest isn't earned yet
+        let interestEarnedTotal = 0;
+        lo.forEach(l=>{
+            const intAmt = Number(l.interestAmt||0);
+            if(intAmt > 0 && l.status === 'PAID'){
+                interestEarnedTotal += Math.floor(intAmt * 0.25);
+            }
+        });
+
+        const bizRev=bz.reduce((s,b)=>s+Number(b.revenue||0),0);
+        const bizCost=bz.reduce((s,b)=>s+Number(b.cost||0),0);
+        const bizProfit=Math.max(0,bizRev-bizCost);
+        const expenseTotal=ex.reduce((s,e)=>s+Number(e.amount),0);
+
+        // Group's net earnings reserve (cash the group itself earned, minus what was spent)
+        // groupFineShare already computed above
+        const groupEarnings    = groupFineShare + interestEarnedTotal + bizProfit; // total ever earned
+        const groupReserve     = Math.max(0, groupEarnings - expenseTotal);        // after expenses
+
+        // ── MEMBER SAVINGS POOL ────────────────────────────────────────────
+        const memberSavings={};
+        members.forEach(m=>{ memberSavings[m.id]=app.getMemberSavingsBalance(m.id); });
+        const totalMemberSavings=Object.values(memberSavings).reduce((s,v)=>s+v,0);
+
+        // ── LOANS OUTSTANDING ─────────────────────────────────────────────
+        const totalDebt=lo.filter(l=>l.status==='ACTIVE').reduce((s,l)=>s+Number(l.balance),0);
+
+        // ── TOTAL ASSET VALUE = member savings held + outstanding loans + group reserve ──
+        const totalAssets = totalMemberSavings + totalDebt + groupReserve;
+
+        return{
+            groupReserve, groupEarnings, expenseTotal,
+            groupFineShare, interestEarnedTotal, bizProfit,
+            totalMemberSavings, memberSavings,
+            totalDebt, totalEmerg,
+            bizRev, bizCost,
+            totalAssets
+        };
+    },
+
+    render(){
+        const c=document.getElementById('main-content'); c.innerHTML='';
+        const T=app.getTotals();
+
+        // DASHBOARD
+        if(app.state.tab==='dashboard'){
+            c.innerHTML=`
+            <div class="page-header">
+                <div><div class="page-title">Dashboard</div><div class="page-subtitle">${new Date().toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
+                <button class="btn btn-ghost" onclick="app.refreshData()">🔄 Refresh</button>
+            </div>
+            <!-- ROW 1: Top-level totals -->
+            <div class="grid-3" style="margin-bottom:12px">
+                <div class="stat-card stat-primary">
+                    <div class="s-label">Total Asset Value</div>
+                    <div class="s-val">${fmt(T.totalAssets)}</div>
+                    <div class="s-sub">Members savings + Loans out + Group reserve</div>
+                </div>
+                <div class="stat-card stat-green">
+                    <div class="s-label">Members Savings Pool</div>
+                    <div class="s-val">${fmt(T.totalMemberSavings)}</div>
+                    <div class="s-sub">${cache.get('members').length} member(s) · belongs to members</div>
+                </div>
+                <div class="stat-card stat-gold">
+                    <div class="s-label">Outstanding Loans</div>
+                    <div class="s-val">${fmt(T.totalDebt)}</div>
+                    <div class="s-sub">${cache.get('loans').filter(l=>l.status==='ACTIVE').length} active loan(s)</div>
+                </div>
+            </div>
+            <!-- ROW 2: Group earnings breakdown -->
+            <div class="card" style="margin-bottom:16px">
+                <div class="card-header">
+                    <span class="card-title">🏦 Group Reserve (Cash at Hand)</span>
+                    <span style="font-size:20px;font-weight:900;color:var(--teal)">${fmt(T.groupReserve)}</span>
+                </div>
+                <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+                    <div style="background:var(--warning-bg);border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:18px;font-weight:900;color:#92400e">${fmt(T.groupFineShare)}</div>
+                        <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;margin-top:3px">Fines (75% share)</div>
+                    </div>
+                    <div style="background:var(--teal-bg);border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:18px;font-weight:900;color:#0d9488">${fmt(T.interestEarnedTotal)}</div>
+                        <div style="font-size:10px;font-weight:800;color:#0d9488;text-transform:uppercase;margin-top:3px">Interest (25% share)</div>
+                    </div>
+                    <div style="background:var(--purple-bg);border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:18px;font-weight:900;color:#6d28d9">${fmt(T.bizProfit)}</div>
+                        <div style="font-size:10px;font-weight:800;color:#6d28d9;text-transform:uppercase;margin-top:3px">Business Profit</div>
+                    </div>
+                    <div style="background:var(--danger-bg);border-radius:10px;padding:14px;text-align:center">
+                        <div style="font-size:18px;font-weight:900;color:#991b1b">- ${fmt(T.expenseTotal)}</div>
+                        <div style="font-size:10px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-top:3px">Expenses Paid Out</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Recent Activity</span><span class="info-chip">Last 20 entries</span></div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Date</th><th>Type</th><th>Member / Description</th><th>Amount</th></tr></thead>
+                    <tbody>${cache.get('transactions').slice(-20).reverse().map(t=>{
+                        const bc=['SAVINGS','EMERGENCY','REPAYMENT','INTEREST_CREDIT','FINE_REBATE','PRINCIPAL_RETURN'].includes(t.type)?'badge-success':['LOAN_ISSUE','EXPENSE'].includes(t.type)?'badge-danger':t.type==='FINE'?'badge-warning':'badge-info';
+                        const m=cache.get('members').find(mem=>mem.id===t.memberId);
+                        return`<tr><td>${fmtDate(t.ts)}</td><td><span class="badge ${bc}">${t.type.replace('_',' ')}</span></td><td>${m?m.name:(t.desc||'—')}</td><td>${fmt(t.amount)}</td></tr>`;
+                    }).join('')||'<tr><td colspan="4"><div class="empty-state"><div class="ei">📭</div><p>No transactions yet.</p></div></td></tr>'}</tbody>
+                </table></div>
+            </div>`;
+        }
+
+        // MEMBERS
+        if(app.state.tab==='members'){
+            const members=cache.get('members').filter(m=>m.name.toLowerCase().includes(app.state.search.toLowerCase()));
+            c.innerHTML=`
+            <div class="page-header">
+                <div><div class="page-title">Members <span style="font-size:16px;color:var(--text-light)">(${members.length})</span></div></div>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                    <input type="text" id="msearch" placeholder="🔍 Search…" class="input-control" style="margin:0;width:180px" value="${app.state.search}" oninput="app.searchMember(this.value)">
+                    <button class="btn btn-primary" onclick="app.modal('addMember')">+ Add Member</button>
+                </div>
+            </div>
+            <div class="grid-3">
+                ${members.map(m=>{
+                    const mSav=app.getMemberSavingsBalance(m.id);
+                    const aLoan=cache.get('loans').find(l=>l.memberId===m.id&&l.status==='ACTIVE');
+                    return`<div class="card card-p" style="transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.name}</div>
+                                <div style="font-size:12px;color:var(--text-light);margin-top:2px">${m.phone||'No phone'}</div>
+                                <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap">
+                                    <span class="badge badge-success">Savings: ${fmt(mSav)}</span>
+                                    ${aLoan?`<span class="badge badge-danger">Loan: ${fmt(aLoan.balance)}</span>`:'<span class="badge badge-info">No Loan</span>'}
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:4px;flex-shrink:0">
+                                <button class="btn btn-ghost" style="padding:5px 8px" title="History" onclick="app.modal('history','${m.id}')">📜</button>
+                                <button class="btn btn-ghost" style="padding:5px 8px" title="Edit" onclick="app.modal('editMember','${m.id}')">✏️</button>
+                                <button style="background:transparent;border:none;cursor:pointer;padding:5px 8px;font-size:14px" title="Delete" onclick="app.deleteMember('${m.id}')">🗑️</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')||'<div class="empty-state"><div class="ei">👥</div><p>No members yet. Click "+ Add Member" to get started.</p></div>'}
+            </div>`;
+            if(app.state.search) setTimeout(()=>{const el=document.getElementById('msearch');if(el)el.focus();},50);
+        }
+
+        // MEETING
+        if(app.state.tab==='meeting'){
+            const members=cache.get('members');
+            c.innerHTML=`
+            <div class="page-header"><div class="page-title">Meeting Log</div><div class="page-subtitle">${new Date().toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long'})}</div></div>
+            <div class="card card-p">
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Member</th><th>Savings (Ksh)</th><th>Emergency (Ksh)</th><th>Fine</th></tr></thead>
+                    <tbody>${members.map(m=>`<tr>
+                        <td><b>${m.name}</b></td>
+                        <td><input type="number" class="input-control m-sav" data-id="${m.id}" value="140" style="width:90px;margin:0" onchange="app.calcMtg()"></td>
+                        <td><input type="number" class="input-control m-emg" data-id="${m.id}" value="20" style="width:90px;margin:0" onchange="app.calcMtg()"></td>
+                        <td><select class="input-control m-fine" data-id="${m.id}" style="margin:0" onchange="app.calcMtg()">
+                            <option value="0">None</option>
+                            <option value="10">Late Coming (Ksh 10)</option>
+                            <option value="30">Absent w/ Apology (Ksh 30)</option>
+                            <option value="50">Absent w/o Apology (Ksh 50)</option>
+                        </select></td>
+                    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999;padding:20px">Add members first.</td></tr>'}</tbody>
+                </table></div>
+                <div style="background:var(--success-bg);padding:14px 18px;margin:16px 0;border-radius:10px;display:flex;justify-content:space-between;font-weight:800;color:#065f46">
+                    <span>Total Collection</span><span id="mtg-total">${fmt(0)}</span>
+                </div>
+                <button class="btn btn-primary w-full" style="font-size:15px;padding:13px" onclick="app.saveMtg()" ${!members.length?'disabled':''}>✅ Confirm &amp; Save Meeting to Sheets</button>
+            </div>`;
+            app.calcMtg();
+        }
+
+        // LOANS
+        if(app.state.tab==='loans'){
+            const members=cache.get('members');
+            const active=cache.get('loans').filter(l=>l.status==='ACTIVE');
+            const paid=cache.get('loans').filter(l=>l.status==='PAID');
+            c.innerHTML=`
+            <div class="page-header"><div class="page-title">Loans</div></div>
+            <div class="grid-2" style="align-items:start">
+                <div class="card card-p">
+                    <div class="card-title" style="margin-bottom:16px">New Loan Application</div>
+                    <form onsubmit="app.issueLoan(event)">
+                        <label class="input-label">Borrower</label>
+                        <select name="memberId" class="input-control" required>
+                            <option value="">Select member…</option>
+                            ${members.map(m=>{const bal=app.getMemberSavingsBalance(m.id);const max=Math.floor(bal*.75);return`<option value="${m.id}">${m.name} — savings: ${fmt(bal)} | max loan: ${fmt(max)}</option>`;}).join('')}
+                        </select>
+                        <label class="input-label">Principal Amount (Ksh)</label>
+                        <input type="number" name="amount" class="input-control" placeholder="0" required min="1">
+                        <label class="input-label">Interest Rate (%)</label>
+                        <input type="number" name="interest" class="input-control" value="10" min="0">
+                        <div style="background:var(--info-bg);border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:#1e40af">
+                            <b>📌 Loan Rules:</b><br>
+                            • Max loan = 75% of member's savings balance<br>
+                            • On full repayment, 75% of interest is credited back to member's savings<br>
+                            • Loan is funded from member's own savings pool
+                        </div>
+                        <button class="btn btn-primary w-full" style="margin-top:12px">💰 Disburse Loan</button>
+                    </form>
+                </div>
+                <div>
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Active Loans (${active.length})</span></div>
+                        <div class="table-wrap"><table>
+                            <thead><tr><th>Borrower</th><th>Principal</th><th>Balance</th><th>Paid</th><th></th></tr></thead>
+                            <tbody>${active.map(l=>{
+                                const m=members.find(mem=>mem.id===l.memberId);
+                                const pct=Math.min(100,Math.round((1-Number(l.balance)/Number(l.amount))*100));
+                                return`<tr>
+                                    <td><b>${m?m.name:'N/A'}</b></td>
+                                    <td>${fmt(l.amount)}</td>
+                                    <td style="color:var(--danger);font-weight:700">${fmt(l.balance)}</td>
+                                    <td style="min-width:80px"><div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--text-light);margin-top:2px">${pct}%</div></td>
+                                    <td><button class="btn btn-ghost" style="font-size:12px" onclick="app.modal('repay','${l.id}')">Pay</button></td>
+                                </tr>`;
+                            }).join('')||'<tr><td colspan="5"><div class="empty-state"><div class="ei">✅</div><p>No active loans.</p></div></td></tr>'}</tbody>
+                        </table></div>
+                    </div>
+                    ${paid.length?`<div class="card">
+                        <div class="card-header"><span class="card-title">Paid Loans (${paid.length})</span></div>
+                        <div class="table-wrap"><table>
+                            <thead><tr><th>Borrower</th><th>Amount</th><th>Status</th></tr></thead>
+                            <tbody>${paid.map(l=>{const m=members.find(mem=>mem.id===l.memberId);return`<tr><td>${m?m.name:'N/A'}</td><td>${fmt(l.amount)}</td><td><span class="badge badge-success">PAID</span></td></tr>`;}).join('')}</tbody>
+                        </table></div>
+                    </div>`:''}
+                </div>
+            </div>`;
+        }
+
+        // EXPENSES
+        if(app.state.tab==='expenses'){
+            const expenses=cache.get('expenses');
+            const total=expenses.reduce((s,e)=>s+Number(e.amount),0);
+            c.innerHTML=`
+            <div class="page-header"><div class="page-title">Expenses</div><div class="page-subtitle">Total spent: ${fmt(total)}</div></div>
+            <div class="grid-2" style="align-items:start">
+                <div class="card card-p">
+                    <div class="card-title" style="margin-bottom:16px">Record Expense</div>
+                    <form onsubmit="app.saveExpense(event)">
+                        <label class="input-label">Description</label>
+                        <input name="desc" class="input-control" placeholder="e.g. Hall hire, printing…" required>
+                        <label class="input-label">Amount (Ksh)</label>
+                        <input type="number" name="amount" class="input-control" placeholder="0" required min="1">
+                        <label class="input-label">Category</label>
+                        <select name="category" class="input-control">
+                            <option>Operational</option><option>Venue</option><option>Stationery</option><option>Food &amp; Drinks</option><option>Transport</option><option>Other</option>
+                        </select>
+                        <button class="btn btn-danger w-full" style="margin-top:16px">💸 Record Expense</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Expense Log</span><span class="badge badge-danger">${fmt(total)}</span></div>
+                    <div class="table-wrap"><table>
+                        <thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
+                        <tbody>${expenses.slice().reverse().map(e=>`<tr><td>${fmtDate(e.ts)}</td><td>${e.desc}</td><td>${fmt(e.amount)}</td></tr>`).join('')
+                        ||'<tr><td colspan="3"><div class="empty-state"><div class="ei">💸</div><p>No expenses yet.</p></div></td></tr>'}</tbody>
+                    </table></div>
+                </div>
+            </div>`;
+        }
+
+        // BUSINESS
+        if(app.state.tab==='business'){
+            const biz=cache.get('business');
+            const T2=app.getTotals();
+            const cats=[...new Set(biz.map(b=>b.category).filter(Boolean))];
+            c.innerHTML=`
+            <div class="page-header">
+                <div><div class="page-title">🏪 Business Earnings</div><div class="page-subtitle">Track group business income, costs, and profit</div></div>
+                <button class="btn btn-teal" onclick="app.modal('addBusiness')">+ Record Earnings</button>
+            </div>
+            <div class="biz-summary">
+                <div><div class="bs-val">${fmt(T2.bizRev)}</div><div class="bs-lbl">Total Revenue</div></div>
+                <div><div class="bs-val">${fmt(T2.bizCost)}</div><div class="bs-lbl">Total Costs</div></div>
+                <div><div class="bs-val">${fmt(Math.abs(T2.bizProfit))}</div><div class="bs-lbl">${T2.bizProfit>=0?'Net Profit':'Net Loss'}</div></div>
+                <div><div class="bs-val">${biz.length}</div><div class="bs-lbl">Records</div></div>
+            </div>
+            ${cats.length?`<div class="grid-3" style="margin-bottom:16px">${cats.map(cat=>{
+                const ci=biz.filter(b=>b.category===cat);
+                const cr=ci.reduce((s,b)=>s+Number(b.revenue||0),0),cc=ci.reduce((s,b)=>s+Number(b.cost||0),0),cp=cr-cc;
+                return`<div class="card card-p">
+                    <div style="font-weight:800;font-size:14px;margin-bottom:6px">📁 ${cat}</div>
+                    <div style="font-size:12px;color:var(--text-light)">${ci.length} record(s)</div>
+                    <div style="margin-top:8px;font-size:13px">Revenue: <b>${fmt(cr)}</b></div>
+                    <div style="font-size:13px">Profit: <b class="${cp>=0?'profit-pos':'profit-neg'}">${fmt(cp)}</b></div>
+                </div>`;
+            }).join('')}</div>`:''}
+            <div class="card">
+                <div class="card-header"><span class="card-title">All Business Records</span></div>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Date</th><th>Business / Activity</th><th>Category</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Notes</th><th></th></tr></thead>
+                    <tbody>${biz.slice().reverse().map(b=>{
+                        const profit=Number(b.revenue||0)-Number(b.cost||0);
+                        return`<tr>
+                            <td>${fmtDate(b.date?b.date+'T12:00:00':b.ts)}</td>
+                            <td><b>${b.name}</b></td>
+                            <td><span class="badge badge-teal">${b.category||'—'}</span></td>
+                            <td style="color:var(--success);font-weight:700">${fmt(b.revenue)}</td>
+                            <td style="color:var(--danger)">${fmt(b.cost)}</td>
+                            <td class="${profit>=0?'profit-pos':'profit-neg'}">${fmt(profit)}</td>
+                            <td style="color:var(--text-light);font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.notes||'—'}</td>
+                            <td><button class="btn btn-danger" style="padding:4px 8px;font-size:12px" onclick="app.deleteBiz('${b.id}')">🗑️</button></td>
+                        </tr>`;
+                    }).join('')||'<tr><td colspan="8"><div class="empty-state"><div class="ei">🏪</div><p>No business records yet. Click "+ Record Earnings" to add one.</p></div></td></tr>'}</tbody>
+                </table></div>
+            </div>`;
+        }
+    },
+
+    // ── ACTIONS ──
+    searchMember(v){app.state.search=v;app.render();},
+    calcMtg(){
+        let t=0;
+        document.querySelectorAll('.m-sav,.m-emg,.m-fine').forEach(el=>t+=Number(el.value)||0);
+        const d=document.getElementById('mtg-total'); if(d) d.innerText=fmt(t);
+    },
+    async saveMtg(){
+        showLoading('Saving meeting…');
+        try{
+            for(const el of document.querySelectorAll('.m-sav')){
+                const mid=el.dataset.id;
+                const sv=Number(el.value);
+                const ev=Number(document.querySelector(`.m-emg[data-id="${mid}"]`).value);
+                const fv=Number(document.querySelector(`.m-fine[data-id="${mid}"]`).value);
+
+                if(sv>0) await cache.add('transactions',{memberId:mid, type:'SAVINGS', amount:sv});
+                if(ev>0) await cache.add('transactions',{memberId:mid, type:'EMERGENCY', amount:ev});
+
+                if(fv>0){
+                    // Full fine recorded (flows into group reserves)
+                    await cache.add('transactions',{memberId:mid, type:'FINE', amount:fv, desc:`Fine paid`});
+                    // 25% fine rebate credited back to member's savings
+                    const memberRebate = Math.floor(fv * 0.25);
+                    if(memberRebate > 0){
+                        await cache.add('transactions',{memberId:mid, type:'FINE_REBATE', amount:memberRebate, desc:`Fine rebate (25% of ${fmt(fv)} fine)`});
+                    }
+                }
+            }
+            hideLoading(); alert('Meeting saved to Google Sheets!\n\nNote: 25% of any fines have been automatically credited back to each member\'s savings.'); app.tab('dashboard');
+        }catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+    async issueLoan(e){
+        e.preventDefault();
+        const mid=e.target.memberId.value, amt=Number(e.target.amount.value), intRate=Number(e.target.interest.value);
+        if(!mid) return alert('Select a borrower.');
+        if(amt<=0) return alert('Enter a valid amount.');
+
+        // Loan is funded FROM member's own savings
+        const mSavBal = app.getMemberSavingsBalance(mid);
+        const lim = Math.floor(mSavBal * 0.75);
+        if(amt > lim) return alert(`Limit exceeded!\n\nMember savings balance: ${fmt(mSavBal)}\nMax loan (75%): ${fmt(lim)}\n\nMember must save more to qualify for a higher loan.`);
+        if(cache.get('loans').find(l=>l.memberId===mid&&l.status==='ACTIVE')) return alert('Member already has an active loan!');
+
+        const interestAmt = Math.round(amt * intRate / 100);
+        const totalToPay  = amt + interestAmt;
+        // 75% of interest will be credited back to member on full repayment
+        const memberInterestShare = Math.floor(interestAmt * 0.75);
+        const groupInterestShare  = interestAmt - memberInterestShare;
+
+        showLoading('Disbursing loan from member savings…');
+        try{
+            // Debit principal from member's savings pool via LOAN_ISSUE
+            await cache.add('transactions',{memberId:mid, type:'LOAN_ISSUE', amount:amt, desc:'Loan principal — deducted from savings'});
+            // Record loan: store interestAmt and rates for split on repayment
+            await cache.add('loans',{memberId:mid, amount:amt, balance:totalToPay, interestAmt:String(interestAmt), interestRate:String(intRate), status:'ACTIVE'});
+            hideLoading();
+            alert(`✅ Loan Disbursed!\n\nPrincipal: ${fmt(amt)}\nInterest (${intRate}%): ${fmt(interestAmt)}\nTotal to repay: ${fmt(totalToPay)}\n\n📌 Interest split on full repayment:\n• Member gets back: ${fmt(memberInterestShare)} (75%)\n• Group keeps: ${fmt(groupInterestShare)} (25%)`);
+            app.render();
+        }catch(err){hideLoading();alert('Error: '+err.message);}
+    },
+    async saveExpense(e){
+        e.preventDefault();
+        const T=app.getTotals(),amt=Number(e.target.amount.value),desc=e.target.desc.value;
+        if(amt>T.cashAtHand) return alert('Insufficient funds. Cash at hand: '+fmt(T.cashAtHand));
+        showLoading('Saving…');
+        try{await cache.add('expenses',{desc,amount:amt});await cache.add('transactions',{type:'EXPENSE',amount:amt,desc});hideLoading();alert('Expense saved.');app.render();}
+        catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+    async deleteMember(id){
+        if(cache.get('loans').some(l=>l.memberId===id&&l.status==='ACTIVE')) return alert('Cannot delete — member has active loan!');
+        if(!confirm('Delete this member and all their records?')) return;
+        showLoading('Deleting…');
+        try{await cache.delete('members',id);hideLoading();app.render();}
+        catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+    async deleteBiz(id){
+        if(!confirm('Delete this business record?')) return;
+        showLoading('Deleting…');
+        try{await cache.delete('business',id);hideLoading();app.render();}
+        catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+    async refreshData(){
+        showLoading('Refreshing from Google Sheets…');
+        try{await cache.refresh();hideLoading();app.render();}
+        catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+
+    // ── MODALS ──
+    modal(type,id){
+        const target=document.getElementById('modal-target');
+        let content='';
+
+        if(type==='addMember'||type==='editMember'){
+            const m=id?cache.get('members').find(x=>x.id===id):{};
+            content=`<h3>${id?'Edit Member':'Add New Member'}</h3>
+            <form onsubmit="app.saveMember(event,'${id||''}')">
+                <label class="input-label">Full Name</label>
+                <input class="input-control" name="name" value="${m?m.name||'':''}" required autofocus placeholder="Full name">
+                <label class="input-label">Phone Number</label>
+                <input class="input-control" name="phone" value="${m?m.phone||'':''}" placeholder="+254…">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost w-full" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary w-full">💾 Save</button>
+                </div>
+            </form>`;
+        }
+
+        else if(type==='history'){
+            const m=cache.get('members').find(x=>x.id===id);
+            const trans=cache.get('transactions').filter(t=>t.memberId===id);
+            const totalSav=trans.filter(t=>t.type==='SAVINGS').reduce((s,t)=>s+Number(t.amount),0);
+            const totalEmg=trans.filter(t=>t.type==='EMERGENCY').reduce((s,t)=>s+Number(t.amount),0);
+            const totalFines=trans.filter(t=>t.type==='FINE').reduce((s,t)=>s+Number(t.amount),0);
+            const totalIntCredit=trans.filter(t=>t.type==='INTEREST_CREDIT').reduce((s,t)=>s+Number(t.amount),0);
+            const totalFineRebate=trans.filter(t=>t.type==='FINE_REBATE').reduce((s,t)=>s+Number(t.amount),0);
+            const totalPrincipalReturn=trans.filter(t=>t.type==='PRINCIPAL_RETURN').reduce((s,t)=>s+Number(t.amount),0);
+            const netSavBal=app.getMemberSavingsBalance(id);
+            const aLoan=cache.get('loans').find(l=>l.memberId===id&&l.status==='ACTIVE');
+            content=`<h3>Member Statement</h3>
+            <div style="border:1px solid var(--border);border-radius:10px;padding:16px;max-height:380px;overflow-y:auto">
+                <div style="font-weight:900;font-size:16px;color:var(--primary)">${m?m.name:''}</div>
+                <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">${m?m.phone||'No phone':''}</div>
+                <div style="background:linear-gradient(135deg,#800000,#5a0000);color:white;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+                    <div><div style="font-size:10px;opacity:.7;font-weight:800;text-transform:uppercase;letter-spacing:.5px">Net Savings Balance</div><div style="font-size:20px;font-weight:900">${fmt(netSavBal)}</div></div>
+                    <div style="font-size:24px">💰</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
+                    <div style="background:var(--success-bg);border-radius:8px;padding:10px;text-align:center"><div style="font-size:13px;font-weight:900;color:#065f46">${fmt(totalSav)}</div><div style="font-size:9px;color:#065f46;font-weight:800;text-transform:uppercase">Savings</div></div>
+                    <div style="background:var(--info-bg);border-radius:8px;padding:10px;text-align:center"><div style="font-size:13px;font-weight:900;color:#1e40af">${fmt(totalEmg)}</div><div style="font-size:9px;color:#1e40af;font-weight:800;text-transform:uppercase">Emergency</div></div>
+                    <div style="background:var(--warning-bg);border-radius:8px;padding:10px;text-align:center"><div style="font-size:13px;font-weight:900;color:#92400e">${fmt(totalFines)}</div><div style="font-size:9px;color:#92400e;font-weight:800;text-transform:uppercase">Fines Paid</div></div>
+                </div>
+                ${(totalIntCredit>0||totalFineRebate>0||totalPrincipalReturn>0)?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
+                    ${totalPrincipalReturn>0?`<div style="background:var(--success-bg);border-radius:8px;padding:10px;text-align:center"><div style="font-size:12px;font-weight:900;color:#065f46">${fmt(totalPrincipalReturn)}</div><div style="font-size:9px;color:#065f46;font-weight:800;text-transform:uppercase">Principal Returned</div></div>`:''}
+                    ${totalIntCredit>0?`<div style="background:var(--teal-bg);border-radius:8px;padding:10px;text-align:center"><div style="font-size:12px;font-weight:900;color:#0d9488">${fmt(totalIntCredit)}</div><div style="font-size:9px;color:#0d9488;font-weight:800;text-transform:uppercase">Interest Credits</div></div>`:''}
+                    ${totalFineRebate>0?`<div style="background:#f3e8ff;border-radius:8px;padding:10px;text-align:center"><div style="font-size:12px;font-weight:900;color:#7c3aed">${fmt(totalFineRebate)}</div><div style="font-size:9px;color:#7c3aed;font-weight:800;text-transform:uppercase">Fine Rebates</div></div>`:''}
+                </div>`:''}
+                ${aLoan?`<div style="background:var(--danger-bg);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:13px;font-weight:700;color:#991b1b">⚠️ Active Loan Balance: ${fmt(aLoan.balance)}</div>`:''}
+                <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    <thead><tr style="background:#f3f4f6"><th style="padding:8px;text-align:left;border-bottom:2px solid var(--border)">Date</th><th style="padding:8px;text-align:left;border-bottom:2px solid var(--border)">Type</th><th style="padding:8px;text-align:right;border-bottom:2px solid var(--border)">Amount</th></tr></thead>
+                    <tbody>${trans.slice().reverse().map(t=>`<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px">${fmtDate(t.ts)}</td><td style="padding:8px">${t.type}</td><td style="padding:8px;text-align:right;font-weight:700">${fmt(t.amount)}</td></tr>`).join('')||'<tr><td colspan="3" style="padding:20px;text-align:center;color:#999">No transactions.</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="app.closeModal()">Close</button>
+                <button class="btn btn-secondary" onclick="app.downloadHistory('${id}')">⬇️ CSV</button>
+                <button class="btn btn-primary" onclick="app.printHistory('${id}')">🖨️ Print / PDF</button>
+            </div>`;
+        }
+
+        else if(type==='repay'){
+            const loan=cache.get('loans').find(l=>l.id===id);
+            const m=loan?cache.get('members').find(mem=>mem.id===loan.memberId):null;
+            content=`<h3>Loan Repayment</h3>
+            <div style="margin-bottom:16px">
+                <div style="font-size:13px;color:var(--text-light)">Borrower: <b style="color:var(--text-dark)">${m?m.name:'N/A'}</b></div>
+                <div style="font-size:22px;font-weight:900;color:var(--danger);margin-top:6px">${fmt(loan?loan.balance:0)} <span style="font-size:13px;font-weight:500;color:var(--text-light)">remaining</span></div>
+            </div>
+            <form onsubmit="app.processRepayment(event,'${id}')">
+                <label class="input-label">Repayment Amount (Ksh)</label>
+                <input type="number" name="repayAmount" class="input-control" max="${loan?loan.balance:0}" required autofocus placeholder="0">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost w-full" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary w-full">✅ Post Payment</button>
+                </div>
+            </form>`;
+        }
+
+        else if(type==='addBusiness'){
+            content=`<h3>Record Business Earnings</h3>
+            <form onsubmit="app.saveBiz(event)">
+                <label class="input-label">Business / Activity Name</label>
+                <input class="input-control" name="name" placeholder="e.g. Catering Job, Vending, Farm produce…" required autofocus>
+                <label class="input-label">Date</label>
+                <input type="date" name="date" class="input-control" value="${new Date().toISOString().split('T')[0]}" required>
+                <label class="input-label">Category</label>
+                <select name="category" class="input-control">
+                    <option>Catering</option><option>Vending</option><option>Rental</option><option>Agriculture</option><option>Trade</option><option>Services</option><option>Other</option>
+                </select>
+                <label class="input-label">Revenue / Gross Earnings (Ksh)</label>
+                <input type="number" name="revenue" class="input-control" placeholder="0" min="0" required>
+                <label class="input-label">Costs / Expenses for this activity (Ksh)</label>
+                <input type="number" name="cost" class="input-control" placeholder="0" min="0" value="0">
+                <label class="input-label">Notes (optional)</label>
+                <input class="input-control" name="notes" placeholder="Any extra details…">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost w-full" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-teal w-full">💾 Save Record</button>
+                </div>
+            </form>`;
+        }
+
+        target.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)app.closeModal()"><div class="modal">${content}</div></div>`;
+    },
+
+    closeModal(){document.getElementById('modal-target').innerHTML='';},
+
+    async saveMember(e,id){
+        e.preventDefault();
+        const data={name:e.target.name.value.trim(),phone:e.target.phone.value.trim()};
+        if(!data.name) return alert('Name is required.');
+        app.closeModal(); showLoading('Saving…');
+        try{id?await cache.update('members',id,data):await cache.add('members',data);hideLoading();app.render();}
+        catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+
+    async processRepayment(e,loanId){
+        e.preventDefault();
+        const amt=Number(e.target.repayAmount.value);
+        const loan=cache.get('loans').find(l=>l.id===loanId);
+        if(!loan) return;
+        if(amt<=0||amt>Number(loan.balance)) return alert(`Enter an amount between 1 and ${fmt(loan.balance)}.`);
+        app.closeModal(); showLoading('Processing repayment…');
+        try{
+            const prevBalance = Number(loan.balance);
+            const newBalance  = Math.max(0, prevBalance - amt);
+            const isFullyPaid = newBalance <= 0;
+
+            // Record repayment coming in
+            await cache.add('transactions',{memberId:loan.memberId, type:'REPAYMENT', amount:amt, desc:`Loan repayment — balance was ${fmt(prevBalance)}`});
+
+            // On FULL repayment: return principal to member savings + credit 75% of interest
+            let msg = `✅ Payment of ${fmt(amt)} posted.`;
+            if(isFullyPaid){
+                const principal   = Number(loan.amount) || 0;
+                const interestAmt = Number(loan.interestAmt) || 0;
+                const memberIntShare = Math.floor(interestAmt * 0.75);
+                const groupIntShare  = interestAmt - memberIntShare;
+
+                // Return the loan principal back to member's savings
+                if(principal > 0){
+                    await cache.add('transactions',{memberId:loan.memberId, type:'PRINCIPAL_RETURN', amount:principal, desc:`Loan principal returned to savings on full repayment`});
+                }
+                // Credit member's 75% share of interest to their savings
+                if(memberIntShare > 0){
+                    await cache.add('transactions',{memberId:loan.memberId, type:'INTEREST_CREDIT', amount:memberIntShare, desc:`Interest credit — 75% of ${fmt(interestAmt)} interest`});
+                }
+                msg += `\n\n🎉 Loan fully paid!`;
+                if(interestAmt > 0){
+                    msg += `\n\nInterest: ${fmt(interestAmt)}\n• ${fmt(memberIntShare)} (75%) → back to your savings\n• ${fmt(groupIntShare)} (25%) → group reserve`;
+                }
+                msg += `\n\nYour loan principal of ${fmt(principal)} has been restored to your savings balance.`;
+            } else {
+                msg += `\nRemaining balance: ${fmt(newBalance)}`;
+            }
+
+            await cache.update('loans',loanId,{balance:newBalance, status:isFullyPaid?'PAID':'ACTIVE'});
+            hideLoading();
+            alert(msg);
+            app.render();
+        }catch(err){hideLoading();alert('Error: '+err.message);}
+    },
+
+    async saveBiz(e){
+        e.preventDefault();
+        const data={name:e.target.name.value.trim(),date:e.target.date.value,category:e.target.category.value,revenue:Number(e.target.revenue.value),cost:Number(e.target.cost.value),notes:e.target.notes.value.trim()};
+        app.closeModal(); showLoading('Saving business record…');
+        try{await cache.add('business',data);hideLoading();app.render();}
+        catch(e){hideLoading();alert('Error: '+e.message);}
+    },
+
+    // ── PRINT & DOWNLOAD ──
+    printHistory(memberId){
+        const m=cache.get('members').find(x=>x.id===memberId);
+        const trans=cache.get('transactions').filter(t=>t.memberId===memberId);
+        const totalSav=trans.filter(t=>t.type==='SAVINGS').reduce((s,t)=>s+Number(t.amount),0);
+        const totalEmg=trans.filter(t=>t.type==='EMERGENCY').reduce((s,t)=>s+Number(t.amount),0);
+        const totalFines=trans.filter(t=>t.type==='FINE').reduce((s,t)=>s+Number(t.amount),0);
+        const aLoan=cache.get('loans').find(l=>l.memberId===memberId&&l.status==='ACTIVE');
+        const w=window.open('','_blank','width=820,height=700');
+        w.document.write(`<!DOCTYPE html><html><head><title>Statement: ${m?m.name:''}</title>
+        <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:'Segoe UI',system-ui,sans-serif;padding:36px;color:#111;max-width:720px;margin:0 auto}
+            .header{display:flex;justify-content:space-between;align-items:start;border-bottom:3px solid #800000;padding-bottom:14px;margin-bottom:16px}
+            .org{font-size:10px;color:#999;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+            h1{color:#800000;font-size:22px;font-weight:900}
+            .sub{color:#666;font-size:12px;margin-top:4px}
+            .logo{background:#800000;color:#FFC107;font-weight:900;font-size:20px;padding:12px 18px;border-radius:10px}
+            .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+            .sb{background:#f3f4f6;border-radius:8px;padding:12px;text-align:center}
+            .sb .v{font-size:16px;font-weight:800;color:#800000}
+            .sb .l{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-top:2px}
+            .alert{background:#fee2e2;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700;color:#991b1b;margin-bottom:12px}
+            table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+            th{background:#800000;color:white;padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;font-weight:800}
+            th:last-child{text-align:right}
+            td{padding:9px 12px;border-bottom:1px solid #eee}
+            td:last-child{text-align:right;font-weight:700}
+            .footer{margin-top:28px;text-align:center;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:14px}
+            .print-btn{background:#800000;color:#FFC107;border:none;padding:10px 24px;border-radius:8px;font-weight:800;cursor:pointer;font-size:14px;margin-top:20px}
+            @media print{.print-btn{display:none}}
+        </style></head><body>
+        <div class="header">
+            <div><div class="org">Akiba Youth Group</div><h1>${m?m.name:''}</h1><div class="sub">${m?m.phone||'No phone recorded':''} &nbsp;·&nbsp; Statement: ${new Date().toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})}</div></div>
+            <div class="logo">A</div>
+        </div>
+        <div class="stats">
+            <div class="sb"><div class="v">Ksh. ${totalSav.toLocaleString()}</div><div class="l">Total Savings</div></div>
+            <div class="sb"><div class="v">Ksh. ${totalEmg.toLocaleString()}</div><div class="l">Emergency Fund</div></div>
+            <div class="sb"><div class="v">Ksh. ${totalFines.toLocaleString()}</div><div class="l">Fines Paid</div></div>
+        </div>
+        ${aLoan?`<div class="alert">⚠️ Active Loan — Outstanding Balance: Ksh. ${Number(aLoan.balance).toLocaleString()}</div>`:''}
+        <table>
+            <thead><tr><th>Date</th><th>Transaction Type</th><th style="text-align:right">Amount (Ksh)</th></tr></thead>
+            <tbody>${trans.slice().reverse().map(t=>`<tr><td>${fmtDate(t.ts)}</td><td>${t.type.replace('_',' ')}</td><td>${Number(t.amount).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:#999;padding:20px">No transactions on record.</td></tr>'}</tbody>
+        </table>
+        <div class="footer">Akiba Tracker Pro v6.0 &nbsp;·&nbsp; Auto-generated member statement &nbsp;·&nbsp; ${new Date().toLocaleString()}</div>
+        <br><button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </body></html>`);
+        w.document.close();
+    },
+
+    downloadHistory(memberId){
+        const m=cache.get('members').find(x=>x.id===memberId);
+        const trans=cache.get('transactions').filter(t=>t.memberId===memberId);
+        let csv=`Member Statement\nName,${m?m.name:''}\nPhone,${m?m.phone||'N/A':''}\nGenerated,${new Date().toLocaleDateString()}\n\n`;
+        csv+='Date,Transaction Type,Amount (Ksh)\n';
+        trans.slice().reverse().forEach(t=>{csv+=`"${fmtDate(t.ts)}","${t.type}","${Number(t.amount).toLocaleString()}"\n`;});
+        const blob=new Blob([csv],{type:'text/csv'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=`${m?m.name.replace(/\s+/g,'_'):'member'}_statement.csv`;
+        a.click();
+    }
+};
+
+loadConfig();
+</script>
+</body>
+</html>
