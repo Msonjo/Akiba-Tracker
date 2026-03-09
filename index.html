@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akiba Youth Group - Tracker Pro v6.3</title>
+    <title>Akiba Youth Group - Tracker Pro v6.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -163,7 +163,7 @@
     <div class="auth-card">
         <div class="auth-logo">A</div>
         <h1>AKIBA TRACKER</h1>
-        <div class="auth-version">v6.3 · Google Sheets Sync</div>
+        <div class="auth-version">v6.4 · Google Sheets Sync</div>
         <p>Sign in with Google to sync all your group data securely to your own Google Sheet — no data stored on this device.</p>
         <div class="setup-box">
             <h4>⚙️ One-Time Setup</h4>
@@ -198,7 +198,7 @@
     <div class="nav-inner">
         <div class="brand" onclick="app.tab('dashboard')">
             <div class="brand-logo">A</div>
-            <div><b style="display:block;line-height:1.1;font-size:13px;color:white">AKIBA</b><small style="font-size:9px;color:var(--secondary)">TRACKER PRO v6.3</small></div>
+            <div><b style="display:block;line-height:1.1;font-size:13px;color:white">AKIBA</b><small style="font-size:9px;color:var(--secondary)">TRACKER PRO v6.4</small></div>
         </div>
         <div class="nav-links">
             <button class="nav-btn active" id="nav-dashboard" onclick="app.tab('dashboard')">📊 Dashboard</button>
@@ -512,7 +512,10 @@ const app={
             <div class="card" style="margin-bottom:16px">
                 <div class="card-header">
                     <span class="card-title">🏦 Group Reserve (Cash at Hand)</span>
-                    <span style="font-size:20px;font-weight:900;color:var(--teal)">${fmt(T.groupReserve)}</span>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <span style="font-size:20px;font-weight:900;color:var(--teal)">${fmt(T.groupReserve)}</span>
+                        <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="app.printGroupReserve()">🖨️ Print Statement</button>
+                    </div>
                 </div>
                 <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
                     <div style="background:var(--warning-bg);border-radius:10px;padding:14px;text-align:center">
@@ -1054,7 +1057,7 @@ const app={
             <thead><tr><th>Date</th><th>Transaction Type</th><th style="text-align:right">Amount (Ksh)</th></tr></thead>
             <tbody>${trans.slice().reverse().map(t=>`<tr><td>${fmtDate(t.ts)}</td><td>${t.type.replace('_',' ')}</td><td>${Number(t.amount).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:#999;padding:20px">No transactions on record.</td></tr>'}</tbody>
         </table>
-        <div class="footer">Akiba Tracker Pro v6.0 &nbsp;·&nbsp; Auto-generated member statement &nbsp;·&nbsp; ${new Date().toLocaleString()}</div>
+        <div class="footer">Akiba Tracker Pro v6.4 &nbsp;·&nbsp; Auto-generated member statement &nbsp;·&nbsp; ${new Date().toLocaleString()}</div>
         <br><button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
         </body></html>`);
         w.document.close();
@@ -1071,6 +1074,137 @@ const app={
         a.href=URL.createObjectURL(blob);
         a.download=`${m?m.name.replace(/\s+/g,'_'):'member'}_statement.csv`;
         a.click();
+    },
+
+    printGroupReserve(){
+        const T = app.getTotals();
+        const tr = cache.get('transactions');
+        const ex = cache.get('expenses');
+        const lo = cache.get('loans');
+        const bz = cache.get('business');
+        const members = cache.get('members');
+
+        // Build group reserve ledger entries — events that affect the group reserve
+        const ledger = [];
+
+        // Fines (net 75% after rebates) — show each FINE with its FINE_REBATE offset
+        tr.forEach(t => {
+            if(t.type === 'FINE'){
+                const m = members.find(mem => mem.id === t.memberId);
+                const gross = Number(t.amount);
+                const rebate = Math.floor(gross * 0.25);
+                const net = gross - rebate;
+                ledger.push({ts:t.ts, category:'Fine', member:m?m.name:'Unknown', desc:`Fine — net 75% kept`, debit:0, credit:net});
+            }
+            if(t.type === 'EXPENSE'){
+                ledger.push({ts:t.ts, category:'Expense', member:'—', desc:t.desc||'Expense', debit:Number(t.amount), credit:0});
+            }
+        });
+
+        // Loan interest (25% on PAID loans)
+        lo.forEach(l => {
+            if(l.status === 'PAID' && Number(l.interestAmt||0) > 0){
+                const m = members.find(mem => mem.id === l.memberId);
+                const groupInt = Math.floor(Number(l.interestAmt) * 0.25);
+                ledger.push({ts:l.ts, category:'Interest', member:m?m.name:'Unknown', desc:`Loan interest — group 25% share`, debit:0, credit:groupInt});
+            }
+        });
+
+        // Business profit entries
+        bz.forEach(b => {
+            const profit = Number(b.revenue||0) - Number(b.cost||0);
+            if(profit !== 0){
+                ledger.push({ts:b.ts||b.date+'T12:00:00', category:'Business', member:'—', desc:b.name+(b.category?' ('+b.category+')':''), debit:profit<0?Math.abs(profit):0, credit:profit>0?profit:0});
+            }
+        });
+
+        // Sort by date ascending
+        ledger.sort((a,b) => new Date(a.ts) - new Date(b.ts));
+
+        // Running balance
+        let running = 0;
+        const rows = ledger.map(e => {
+            running += e.credit - e.debit;
+            return {...e, balance: running};
+        });
+
+        const w = window.open('','_blank','width=900,height=700');
+        w.document.write(`<!DOCTYPE html><html><head><title>Group Reserve Statement — Akiba Youth Group</title>
+        <style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:'Segoe UI',system-ui,sans-serif;padding:36px;color:#111;max-width:780px;margin:0 auto}
+            .header{display:flex;justify-content:space-between;align-items:start;border-bottom:3px solid #800000;padding-bottom:14px;margin-bottom:20px}
+            .org{font-size:10px;color:#999;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+            h1{color:#800000;font-size:22px;font-weight:900}
+            .sub{color:#666;font-size:12px;margin-top:4px}
+            .logo{background:#800000;color:#FFC107;font-weight:900;font-size:20px;padding:12px 18px;border-radius:10px}
+            .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+            .sb{background:#f3f4f6;border-radius:8px;padding:12px;text-align:center}
+            .sb .v{font-size:15px;font-weight:800;color:#800000}
+            .sb .l{font-size:9px;color:#666;font-weight:700;text-transform:uppercase;margin-top:2px}
+            .reserve-total{background:#800000;color:white;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+            .reserve-total .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;opacity:.8}
+            .reserve-total .val{font-size:26px;font-weight:900;color:#FFC107}
+            table{width:100%;border-collapse:collapse;font-size:12px}
+            thead tr{background:#800000}
+            th{color:white;padding:9px 10px;text-align:left;font-size:10px;text-transform:uppercase;font-weight:800}
+            th.num{text-align:right}
+            td{padding:8px 10px;border-bottom:1px solid #eee;vertical-align:middle}
+            td.num{text-align:right;font-weight:700}
+            .cat{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase}
+            .cat-fine{background:#fef3c7;color:#92400e}
+            .cat-interest{background:#ccfbf1;color:#0d9488}
+            .cat-business{background:#ede9fe;color:#6d28d9}
+            .cat-expense{background:#fee2e2;color:#991b1b}
+            .cr{color:#16a34a}
+            .dr{color:#dc2626}
+            .footer{margin-top:28px;text-align:center;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:14px}
+            .print-btn{background:#800000;color:#FFC107;border:none;padding:10px 24px;border-radius:8px;font-weight:800;cursor:pointer;font-size:14px;margin-top:20px}
+            @media print{.print-btn{display:none}}
+        </style></head><body>
+        <div class="header">
+            <div>
+                <div class="org">Akiba Youth Group</div>
+                <h1>Group Reserve Statement</h1>
+                <div class="sub">Financial reserve ledger — earnings from fines, interest &amp; business &nbsp;·&nbsp; ${new Date().toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})}</div>
+            </div>
+            <div class="logo">A</div>
+        </div>
+        <div class="reserve-total">
+            <div><div class="lbl">Current Group Reserve</div><div class="val">Ksh. ${T.groupReserve.toLocaleString()}</div></div>
+            <div style="text-align:right;font-size:12px;opacity:.8">${rows.length} ledger entries</div>
+        </div>
+        <div class="stats">
+            <div class="sb"><div class="v">Ksh. ${T.groupFineShare.toLocaleString()}</div><div class="l">Fines (75%)</div></div>
+            <div class="sb"><div class="v">Ksh. ${T.interestEarnedTotal.toLocaleString()}</div><div class="l">Interest (25%)</div></div>
+            <div class="sb"><div class="v">Ksh. ${T.bizProfit.toLocaleString()}</div><div class="l">Business Profit</div></div>
+            <div class="sb"><div class="v" style="color:#dc2626">Ksh. ${T.expenseTotal.toLocaleString()}</div><div class="l">Expenses Out</div></div>
+        </div>
+        <table>
+            <thead><tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Member / Activity</th>
+                <th>Description</th>
+                <th class="num">Credit (In)</th>
+                <th class="num">Debit (Out)</th>
+                <th class="num">Balance</th>
+            </tr></thead>
+            <tbody>${rows.length ? rows.map(e => `<tr>
+                <td>${fmtDate(e.ts)}</td>
+                <td><span class="cat cat-${e.category.toLowerCase()}">${e.category}</span></td>
+                <td>${e.member}</td>
+                <td style="color:#555;max-width:160px">${e.desc}</td>
+                <td class="num cr">${e.credit>0?'Ksh. '+e.credit.toLocaleString():'—'}</td>
+                <td class="num dr">${e.debit>0?'Ksh. '+e.debit.toLocaleString():'—'}</td>
+                <td class="num">Ksh. ${e.balance.toLocaleString()}</td>
+            </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:#999;padding:20px">No group reserve entries yet.</td></tr>'}
+            </tbody>
+        </table>
+        <div class="footer">Akiba Tracker Pro &nbsp;·&nbsp; Group Reserve Statement &nbsp;·&nbsp; Generated ${new Date().toLocaleString()}</div>
+        <br><button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </body></html>`);
+        w.document.close();
     }
 };
 
