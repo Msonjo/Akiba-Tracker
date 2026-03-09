@@ -163,7 +163,7 @@
     <div class="auth-card">
         <div class="auth-logo">A</div>
         <h1>AKIBA TRACKER</h1>
-        <div class="auth-version">v6.2 · Google Sheets Sync</div>
+        <div class="auth-version">v6.3 · Google Sheets Sync</div>
         <p>Sign in with Google to sync all your group data securely to your own Google Sheet — no data stored on this device.</p>
         <div class="setup-box">
             <h4>⚙️ One-Time Setup</h4>
@@ -198,7 +198,7 @@
     <div class="nav-inner">
         <div class="brand" onclick="app.tab('dashboard')">
             <div class="brand-logo">A</div>
-            <div><b style="display:block;line-height:1.1;font-size:13px;color:white">AKIBA</b><small style="font-size:9px;color:var(--secondary)">TRACKER PRO v6.2</small></div>
+            <div><b style="display:block;line-height:1.1;font-size:13px;color:white">AKIBA</b><small style="font-size:9px;color:var(--secondary)">TRACKER PRO v6.3</small></div>
         </div>
         <div class="nav-links">
             <button class="nav-btn active" id="nav-dashboard" onclick="app.tab('dashboard')">📊 Dashboard</button>
@@ -322,11 +322,11 @@ async function ensureSheets() {
     const meta=await gapi(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}?fields=sheets.properties.title`,'GET');
     const existing=meta.sheets.map(s=>s.properties.title);
     const HDRS={
-        [SHEETS.MEMBERS]:     [['id','name','phone','ts']],
-        [SHEETS.TRANSACTIONS]:[['id','memberId','type','amount','desc','ts']],
-        [SHEETS.LOANS]:       [['id','memberId','amount','balance','status','interestAmt','interestRate','ts']],
-        [SHEETS.EXPENSES]:    [['id','desc','amount','ts']],
-        [SHEETS.BUSINESS]:    [['id','date','name','category','revenue','cost','notes','ts']]
+        [SHEETS.MEMBERS]:     [['Id','Name','Phone','Ts']],
+        [SHEETS.TRANSACTIONS]:[['Id','MemberId','Type','Amount','Desc','Ts']],
+        [SHEETS.LOANS]:       [['Id','MemberId','Amount','Balance','Status','InterestAmt','InterestRate','Ts']],
+        [SHEETS.EXPENSES]:    [['Id','Desc','Amount','Ts']],
+        [SHEETS.BUSINESS]:    [['Id','Date','Name','Category','Revenue','Cost','Notes','Ts']]
     };
     const reqs=[];
     for(const n of Object.values(SHEETS)) if(!existing.includes(n)) reqs.push({addSheet:{properties:{title:n}}});
